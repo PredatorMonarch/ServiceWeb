@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using System.Net.Mail;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,59 +19,51 @@ namespace UserService.Controllers
     public class UsersController : ControllerBase
     {
         private readonly UserServiceContext _context;
-        private readonly PasswordHasher<User> _passwordHasher;
 
-        public UsersController(UserServiceContext context, PasswordHasher<User> passwordHasher)
+        public UsersController(UserServiceContext context)
         {
             _context = context;
-            _passwordHasher = passwordHasher;
         }
 
         // GET: api/Users
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetAllUsers()
         {
-            return await _context.User
-                .Select(u => UserToDTO(u))
+            return await _context.Users
+                .Select(u => new UserDTO(u))
                 .ToListAsync();
         }
 
         // GET: api/Users/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<UserDTO>> GetUser(int id)
+        public async Task<ActionResult<UserDTO>> GetUser(string id)
         {
-            var user = await _context.User.FindAsync(id);
+            var user = await _context.Users.FindAsync(id);
 
             if (user == null)
             {
                 return NotFound();
             }
 
-            return UserToDTO(user);
+            return Ok(new UserDTO(user));
         }
 
         // PUT: api/Users/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, UserUpdateModel userUdpate)
+        public async Task<IActionResult> UpdateUser(string id, UserUpdateModel userUdpate)
         {
-            if (id != userUdpate.Id)
-            {
+            if (id != UserService.Entities.User.ComputeId(userUdpate.Username, userUdpate.Email))
                 return BadRequest();
-            }
 
-            var user = await _context.User.FindAsync(id);
+            var user = await _context.Users.FindAsync(id);
 
             if (user == null)
-            {
                 return NotFound();
-            }
 
-            if(userUdpate.Name != null) user.Name = userUdpate.Name;
-            if(userUdpate.Email != null) user.Email = userUdpate.Email;
-
-            if(userUdpate.Password != null) {
-                user.PasswordHash = _passwordHasher.HashPassword(user, userUdpate.Password);
-            }
+            
+            user.Username = userUdpate.Username;
+            user.Email = userUdpate.Email;
+            user.SetPassword(userUdpate.Pass);
 
             _context.Entry(user).State = EntityState.Modified;
 
@@ -78,14 +73,11 @@ namespace UserService.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!UserExists(id))
-                {
+
+                if (!await UserExists(id))
                     return NotFound();
-                }
                 else
-                {
                     throw;
-                }
             }
 
             return NoContent();
@@ -93,16 +85,16 @@ namespace UserService.Controllers
 
         // POST: api/Users/register
         [HttpPost("register")]
-        public async Task<ActionResult<User>> CreateUser(UserCreateModel userPayload)
+        public async Task<ActionResult<User>> CreateUser(UserUpdateModel userPayload)
         {
-            var user = new User
-            {
-                Email = userPayload.Email,
-                Name = userPayload.Name,
-            };
-            user.PasswordHash = _passwordHasher.HashPassword(user, userPayload.Password);
+            var s = await this.UserExists(UserService.Entities.User.ComputeId(userPayload.Username, userPayload.Email));
+            if (s is not bool)
+                return Conflict(s);
+            if (s)
+                return Conflict("Account already exists");
 
-            _context.User.Add(user);
+            var user = new User(userPayload.Username, userPayload.Email, userPayload.Pass);
+            _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetUser", new { id = user.Id }, user);
@@ -110,60 +102,46 @@ namespace UserService.Controllers
 
         // POST: api/Users/login
         [HttpPost("login")]
-        public async Task<ActionResult<UserDTO>> Login(UserLogin userLogin)
+        public async Task<ActionResult<UserDTO>> Login(UserLoginModel userLogin)
         {
 
-            var user = await _context.User.FirstOrDefaultAsync(u => u.Name == userLogin.Name);
+            var user = await _context.Users.Where(u=> u.Username == userLogin.Login || u.Email == userLogin.Login).FirstOrDefaultAsync();
 
             if (user == null)
-            {
-                // User with the given username does not exist
                 return NotFound();
-            }
 
-            var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, userLogin.Pass);
-
-            if (passwordVerificationResult == PasswordVerificationResult.Success)
-            {
-                // Passwords match, authentication successful
-                return Ok(UserToDTO(user));
-            }
-            else
-            {
-                // Passwords do not match, authentication failed
-                return NotFound();
-            }
+            if (user.CheckPassword(userLogin.Pass))
+                return Ok(new UserDTO(user));
+            
+            return NotFound();
         }
 
         // DELETE: api/Users/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(string id)
         {
-            var user = await _context.User.FindAsync(id);
+            var user = await _context.Users.FindAsync(id);
             if (user == null)
-            {
                 return NotFound();
-            }
 
-            _context.User.Remove(user);
+            _context.Users.Remove(user);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-        private bool UserExists(int id)
+        private async Task<dynamic> UserExists(string id)
         {
-            return _context.User.Any(e => e.Id == id);
-        }
+            var usernameExists = await _context.Users.AnyAsync(e => e.Id.Substring(0, 64) == id.Substring(0, 64));
+            var emailExists = await _context.Users.AnyAsync(e => e.Id.Substring(64, 64) == id.Substring(64, 64));
 
-        private static UserDTO UserToDTO(User user)
-        {
-            return new UserDTO
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-            };
+            if (usernameExists && emailExists)
+                return true;
+            if (usernameExists)
+                return "Username already taken";
+            if (emailExists)
+                return "Email already exists";
+            return false;
         }
     }
 }

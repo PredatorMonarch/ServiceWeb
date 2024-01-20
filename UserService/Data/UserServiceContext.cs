@@ -14,6 +14,6 @@ namespace UserService.Data
         {
         }
 
-        public DbSet<User> User { get; set; } = default!;
+        public DbSet<User> Users { get; set; } = default!;
     }
 }
