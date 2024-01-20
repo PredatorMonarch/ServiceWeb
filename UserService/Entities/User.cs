@@ -12,15 +12,15 @@ namespace UserService.Entities
     
     public class User
     {
-        [MaxLength(128)]
-        public string Id { get; private set; }
+        [MaxLength(64)]
+        public string Id { get; set; }
         [MaxLength(30)]
         public string Username { get; set; }
         [MaxLength(254)]
         public string Email { get; set; }
         [MaxLength(88)] 
-        private string Hash { get; set; }
-        private byte[] Salt { get; set; } = new byte[16];
+        public string Hash { get; private set; }
+        public byte[] Salt { get; private set; }
         [MaxLength(200)]
         public string? Token { get; private set; } = null;
 
@@ -32,7 +32,8 @@ namespace UserService.Entities
         {
             this.Username = username;
             this.Email = email;
-            this.Id = User.ComputeId(username, email);
+            this.Id = User.ComputeId(username);
+            this.Salt = new byte[16];
             new Random().NextBytes(this.Salt);
             using var hasher = new Argon2d(Encoding.UTF8.GetBytes(password));
             hasher.Salt = this.Salt;
@@ -62,9 +63,10 @@ namespace UserService.Entities
             hasher.MemorySize = 65536;
             this.Hash = Convert.ToBase64String(hasher.GetBytes(64));
         }
-        public static string ComputeId(string username, string email)
+        public static string ComputeId(string username)
         {
-            return SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(username)).ToString() + SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(email)).ToString();
+            var hash = SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(username));
+            return BitConverter.ToString(hash).Replace("-", "").ToLower();
         }
     }
 
@@ -72,7 +74,7 @@ namespace UserService.Entities
     {
         public required string Pass { get; set; } = pass;
         public required string Username { get; set; } = username;
-        public required string Email { get; set; } = pass;
+        public required string Email { get; set; } = email;
     }
     public class UserLoginModel(string login, string pass)
     {

@@ -52,16 +52,19 @@ namespace UserService.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(string id, UserUpdateModel userUdpate)
         {
-            if (id != UserService.Entities.User.ComputeId(userUdpate.Username, userUdpate.Email))
+            if (id != UserService.Entities.User.ComputeId(userUdpate.Username))
                 return BadRequest();
+            
+            var s = await this.UserExists(UserService.Entities.User.ComputeId(userUdpate.Username), userUdpate.Email);
+            if (s is not bool)
+                if (s == "Email already exists")
+                    return Conflict(s);
 
             var user = await _context.Users.FindAsync(id);
 
             if (user == null)
                 return NotFound();
-
             
-            user.Username = userUdpate.Username;
             user.Email = userUdpate.Email;
             user.SetPassword(userUdpate.Pass);
 
@@ -74,20 +77,20 @@ namespace UserService.Controllers
             catch (DbUpdateConcurrencyException)
             {
 
-                if (!await UserExists(id))
+                if (!await UserExists(id, userUdpate.Email))
                     return NotFound();
                 else
                     throw;
             }
 
-            return NoContent();
+            return Ok(new UserDTO(user));
         }
 
         // POST: api/Users/register
         [HttpPost("register")]
         public async Task<ActionResult<User>> CreateUser(UserUpdateModel userPayload)
         {
-            var s = await this.UserExists(UserService.Entities.User.ComputeId(userPayload.Username, userPayload.Email));
+            var s = await this.UserExists(UserService.Entities.User.ComputeId(userPayload.Username), userPayload.Email);
             if (s is not bool)
                 return Conflict(s);
             if (s)
@@ -97,7 +100,7 @@ namespace UserService.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
+            return Ok(new UserDTO(user));
         }
 
         // POST: api/Users/login
@@ -105,7 +108,7 @@ namespace UserService.Controllers
         public async Task<ActionResult<UserDTO>> Login(UserLoginModel userLogin)
         {
 
-            var user = await _context.Users.Where(u=> u.Username == userLogin.Login || u.Email == userLogin.Login).FirstOrDefaultAsync();
+            var user = await _context.Users.FindAsync(Entities.User.ComputeId(userLogin.Login));
 
             if (user == null)
                 return NotFound();
@@ -113,7 +116,7 @@ namespace UserService.Controllers
             if (user.CheckPassword(userLogin.Pass))
                 return Ok(new UserDTO(user));
             
-            return NotFound();
+            return NotFound("Wrong password");
         }
 
         // DELETE: api/Users/5
@@ -130,14 +133,13 @@ namespace UserService.Controllers
             return NoContent();
         }
 
-        private async Task<dynamic> UserExists(string id)
+        private async Task<dynamic> UserExists(string id, string email)
         {
-            var usernameExists = await _context.Users.AnyAsync(e => e.Id.Substring(0, 64) == id.Substring(0, 64));
-            var emailExists = await _context.Users.AnyAsync(e => e.Id.Substring(64, 64) == id.Substring(64, 64));
-
-            if (usernameExists && emailExists)
+            var user = await _context.Users.FindAsync(id);
+            var emailExists = await _context.Users.AnyAsync(e => e.Email == email);
+            if (user != null && user.Email == email)
                 return true;
-            if (usernameExists)
+            if (user != null)
                 return "Username already taken";
             if (emailExists)
                 return "Email already exists";
