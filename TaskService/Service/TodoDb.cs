@@ -116,16 +116,11 @@ namespace TaskService.Service
                 var todos = await GetTodoLists(userId, taskListId);
                 var id = (todos.Any() ? todos.Max(t => t.Id) : 0) + 1;
                 // First, create the Todo node
-                var createResult = await session.RunAsync(
-                    "CREATE (t:Todo {id: $id, text: $text, isDone: $isDone}) RETURN t",
-                    new { id = id, text = todo.Text, isDone = todo.IsDone });
-                await createResult.ConsumeAsync();
-
-                // Then, create a relationship between the task list node and the Todo node
-                var relateResult = await session.RunAsync(
-                    "MATCH (u:User {id: $userId})-[:HAS_TASKLIST]->(tl:TaskList {id: $taskListId}), (todo:Todo {id: $todoId}) CREATE (tl)-[:HAS_TODO]->(todo)",
-                    new { userId, taskListId, todoId = id });
-                await relateResult.ConsumeAsync();
+                var createAndRelateResult = await session.RunAsync(
+                    "MATCH (u:User {id: $userId})-[:HAS_TASKLIST]->(tl:TaskList {id: $taskListId}) " +
+                    "CREATE (t:Todo {id: $id, text: $text, isDone: $isDone}), (tl)-[:HAS_TODO]->(t) RETURN t",
+                    new { userId, taskListId, id = id, text = todo.Text, isDone = todo.IsDone });
+                await createAndRelateResult.ConsumeAsync();
                 var Todo = new Todo
                 {
                     Id = id,
@@ -180,12 +175,16 @@ namespace TaskService.Service
                 var result = await session.RunAsync(
                     "MATCH (u:User {id: $userId})-[:HAS_TASKLIST]->(t:TaskList) RETURN t",
                     new { userId });
-                var taskLists = await result.ToListAsync(r => new TaskList
+                var taskLists = await result.ToListAsync(r => 
                 {
-                    Id = r["t"].As<Dictionary<string, object>>()["id"].As<string>(),
-                    Name = r["t"].As<Dictionary<string, object>>()["name"].As<string>(),
-                    Progress = r["t"].As<Dictionary<string, object>>()["progress"].As<int>(),
-                    Size = r["t"].As<Dictionary<string, object>>()["size"].As<int>()
+                    var nodeProperties = r["t"].As<INode>().Properties;
+                    return new TaskList
+                    {
+                        Id = nodeProperties["id"].As<string>(),
+                        Name = nodeProperties["name"].As<string>(),
+                        Progress = nodeProperties["progress"].As<int>(),
+                        Size = nodeProperties["size"].As<int>()
+                    };
                 });
                 return taskLists;
             }
@@ -203,11 +202,15 @@ namespace TaskService.Service
                 var result = await session.RunAsync(
                     "MATCH (u:User {id: $userId})-[:HAS_TASKLIST]->(tl:TaskList {id: $taskListId})-[r:HAS_TODO]->(todo:Todo) RETURN todo",
                     new { userId, taskListId });
-                var todos = await result.ToListAsync(r => new Todo
+                var todos = await result.ToListAsync(r => 
                 {
-                    Id = r["todo"].As<Dictionary<string, object>>()["id"].As<int>(),
-                    Text = r["todo"].As<Dictionary<string, object>>()["text"].As<string>(),
-                    IsDone = r["todo"].As<Dictionary<string, object>>()["isDone"].As<bool>()
+                    var nodeProperties = r["todo"].As<INode>().Properties;
+                    return new Todo
+                    {
+                        Id = nodeProperties["id"].As<int>(),
+                        Text = nodeProperties["text"].As<string>(),
+                        IsDone = nodeProperties["isDone"].As<bool>()
+                    };
                 });
                 return todos;
             }
