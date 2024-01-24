@@ -75,7 +75,7 @@ namespace TaskService.Service
             {
                 var result = await session.RunAsync(
                     "MATCH (u:User {id: $userId})-[h:HAS_TASKLIST]->(t:TaskList {id: $id}) SET t.name = $name, t.progress = $progress, t.size = $size RETURN t",
-                    new { userId, id = taskList.Id, name = taskList.Name, progress = taskList.Progress, size = taskList.Size });
+                    new { userId, id = taskList.Id, name = taskList.Name, progress = taskList.Progress, size = taskList.Size});
                 await result.ConsumeAsync();
             }
             finally
@@ -108,22 +108,31 @@ namespace TaskService.Service
             }
         }
         
-        public async Task CreateTodo(string userId, string taskListId, Todo todo)
+        public async Task<Todo> CreateTodo(string userId, string taskListId, TodoCreate todo)
         {
             var session = _driver.AsyncSession();
             try
             {
+                var todos = await GetTodoLists(userId, taskListId);
+                var id = (todos.Any() ? todos.Max(t => t.Id) : 0) + 1;
                 // First, create the Todo node
                 var createResult = await session.RunAsync(
                     "CREATE (t:Todo {id: $id, text: $text, isDone: $isDone}) RETURN t",
-                    new { id = todo.Id, text = todo.Text, isDone = todo.IsDone });
+                    new { id = id, text = todo.Text, isDone = todo.IsDone });
                 await createResult.ConsumeAsync();
 
                 // Then, create a relationship between the task list node and the Todo node
                 var relateResult = await session.RunAsync(
                     "MATCH (u:User {id: $userId})-[:HAS_TASKLIST]->(tl:TaskList {id: $taskListId}), (todo:Todo {id: $todoId}) CREATE (tl)-[:HAS_TODO]->(todo)",
-                    new { userId, taskListId, todoId = todo.Id });
+                    new { userId, taskListId, todoId = id });
                 await relateResult.ConsumeAsync();
+                var Todo = new Todo
+                {
+                    Id = id,
+                    Text = todo.Text,
+                    IsDone = todo.IsDone
+                };
+                return Todo;
             }
             finally
             {
