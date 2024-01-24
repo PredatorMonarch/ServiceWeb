@@ -1,17 +1,35 @@
+using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
+using System;
 namespace TaskService.Entities
 {
     public class Todo
     {
         public int Id { get; set; }
-
+        [MaxLength(255)]
         public required string Text { get; set; }
-
         public bool IsDone { get; set; }
-
     }
-    public class TodoCreate
+    
+    public class TaskList
     {
-        public required string Text { get; set; }
-        public bool IsDone { get; set; }
+        [MaxLength(36)] 
+        public string Id { get; set; }
+        [MaxLength(30)]
+        public required string Name { get; set; }
+        public int Progress { get; set; } = 0;
+        public int Size { get; set; } = 0;
+
+        public TaskList()
+        {
+            Id = "00000000-0000-0000-0000-000000000000";
+            Name = "Untilted";
+        }
+        
+        public TaskList(string name)
+        {
+            Id = Guid.NewGuid().ToString();
+            Name = name;
+        }
     }
 }
