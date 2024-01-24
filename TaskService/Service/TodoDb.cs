@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TaskService.Entities;
+﻿using TaskService.Entities;
 using Neo4j.Driver;
 
 namespace TaskService.Service
@@ -98,7 +97,7 @@ namespace TaskService.Service
                 }
                 
                 // Then, delete the TaskList node
-                var result = await session.RunAsync(
+                await session.RunAsync(
                     "MATCH (u:User {id: $userId})-[h:HAS_TASKLIST]->(t:TaskList {id: $id}) DELETE h, t",
                     new { userId, id = taskList.Id });
             }
@@ -119,7 +118,7 @@ namespace TaskService.Service
                 var createAndRelateResult = await session.RunAsync(
                     "MATCH (u:User {id: $userId})-[:HAS_TASKLIST]->(tl:TaskList {id: $taskListId}) " +
                     "CREATE (t:Todo {id: $id, text: $text, isDone: $isDone}), (tl)-[:HAS_TODO]->(t) RETURN t",
-                    new { userId, taskListId, id = id, text = todo.Text, isDone = todo.IsDone });
+                    new { userId, taskListId, id, text = todo.Text, isDone = todo.IsDone });
                 await createAndRelateResult.ConsumeAsync();
                 var Todo = new Todo
                 {
