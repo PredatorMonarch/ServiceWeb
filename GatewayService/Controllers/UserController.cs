@@ -31,7 +31,7 @@ namespace GatewayService.Controllers
             using (var client = _httpClientFactory.CreateClient())
             {
                 // Set the base address of the API you want to call
-                client.BaseAddress = new System.Uri("http://localhost:5259/");
+                client.BaseAddress = new System.Uri("http://localhost:5001/");
 
                 // Send a POST request to the login endpoint
                 HttpResponseMessage response = await client.PostAsJsonAsync("api/Users/login", new UserLoginModel(model.Login, model.Pass));
@@ -47,7 +47,8 @@ namespace GatewayService.Controllers
                 }
                 else
                 {
-                    return BadRequest(response.Content.ToString());
+                    var message = await response.Content.ReadAsStringAsync();
+                    return BadRequest(message);
                 }
             }
         }       
@@ -60,7 +61,7 @@ namespace GatewayService.Controllers
             using (var client = _httpClientFactory.CreateClient())
             {
                 // Set the base address of the API you want to call
-                client.BaseAddress = new System.Uri("http://localhost:5259/");
+                client.BaseAddress = new System.Uri("http://localhost:5001/");
 
                 // Send a POST request to the login endpoint
                 HttpResponseMessage response = await client.PostAsJsonAsync("api/Users/register", model);
@@ -72,20 +73,24 @@ namespace GatewayService.Controllers
                 {
                     // You can deserialize the response content here if needed
                     var result = await response.Content.ReadFromJsonAsync<UserDTO>();
-                    client.BaseAddress = new Uri("http://localhost:5107/");
-                    HttpResponseMessage response2 = await client.PostAsJsonAsync($"api/Tasks/{result.Id}" , "");
-                    if (response2.IsSuccessStatusCode)
+                    using (var client2 = _httpClientFactory.CreateClient())
                     {
-                        return Ok(result);
-                    }
-                    else
-                    {
-                        return Conflict("Could not create user node");
+                        client2.BaseAddress = new Uri("http://localhost:5002/");
+                        HttpResponseMessage response2 = await client2.PostAsJsonAsync($"api/Tasks/{result.Id}" , "");
+                        if (response2.IsSuccessStatusCode)
+                        {
+                            return Ok(result);
+                        }
+                        else
+                        {
+                            return Conflict("Could not create user node");
+                        }
                     }
                 }
                 else
                 {
-                    return Conflict(response.Content.ToString());
+                    var message = await response.Content.ReadAsStringAsync();
+                    return Conflict(message);
                 }
             }
         }
@@ -103,10 +108,10 @@ namespace GatewayService.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
                 if (userId == null) return Unauthorized();
                 
-                client.BaseAddress = new System.Uri("http://localhost:5259/");
+                client.BaseAddress = new System.Uri("http://localhost:5001/");
 
                 // Send a POST request to the login endpoint
-                HttpResponseMessage response = await client.PutAsJsonAsync($"api/Users/update/{userId}", model);
+                HttpResponseMessage response = await client.PutAsJsonAsync($"api/Users/{userId}", model);
                 // Console.WriteLine(response.Content.ToString());
                 // Console.WriteLine(response.StatusCode);
 
@@ -119,7 +124,8 @@ namespace GatewayService.Controllers
                 }
                 else
                 {
-                    return Conflict(response.Content.ToString());
+                    var message = await response.Content.ReadAsStringAsync();
+                    return Conflict(message);
                 }
             }
         }
@@ -137,26 +143,29 @@ namespace GatewayService.Controllers
                 var userId = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
                 if (userId == null) return Unauthorized();
                 
-                client.BaseAddress = new System.Uri("http://localhost:5107/");
+                client.BaseAddress = new System.Uri("http://localhost:5002/");
                 var response2 = await client.DeleteAsync($"api/Tasks/{userId}");
                 
-                client.BaseAddress = new System.Uri("http://localhost:5259/");
-
-                // Send a POST request to the login endpoint
-                HttpResponseMessage response = await client.DeleteAsync($"api/Users/{userId}");
-                // Console.WriteLine(response.Content.ToString());
-                // Console.WriteLine(response.StatusCode);
-
-                // Check if the response status code is 2xx
-                if (response.IsSuccessStatusCode)
+                using (var client2 = _httpClientFactory.CreateClient())
                 {
-                    // You can deserialize the response content here if needed
-                    var result = await response.Content.ReadFromJsonAsync<string>();
-                    return Ok(result);
-                }
-                else
-                {
-                    return Conflict(response.Content.ToString());
+                    client2.BaseAddress = new System.Uri("http://localhost:5001/");
+
+                    // Send a POST request to the login endpoint
+                    HttpResponseMessage response = await client2.DeleteAsync($"api/Users/{userId}");
+                    // Console.WriteLine(response.Content.ToString());
+                    // Console.WriteLine(response.StatusCode);
+
+                    // Check if the response status code is 2xx
+                    if (response.StatusCode == HttpStatusCode.NoContent)
+                    {
+                        // You can deserialize the response content here if needed
+                        var result = await response.Content.ReadAsStringAsync();
+                        return Ok(result);
+                    }
+                    else
+                    {
+                        return Conflict("Could not delete user");
+                    }
                 }
             }
         }
@@ -165,7 +174,7 @@ namespace GatewayService.Controllers
         [HttpGet("jwt")]
         public ActionResult<string> Jwt()
         {
-            var userName = User.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Name)?.Value;
+            var userName = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
 
             foreach (var claim in User.Claims)
             {

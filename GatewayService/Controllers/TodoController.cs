@@ -13,7 +13,7 @@ namespace GatewayService.Controllers
         public TaskController()
         {
             client = new HttpClient();
-            client.BaseAddress = new System.Uri("http://localhost:5107/");
+            client.BaseAddress = new System.Uri("http://localhost:5002/");
         }
 
         [Authorize]
@@ -91,7 +91,7 @@ namespace GatewayService.Controllers
             var userId = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
             if (userId == null) return Unauthorized();
 
-            HttpResponseMessage response = await client.DeleteAsync($"api/Todo/delete/{userId}/{taskId}");
+            HttpResponseMessage response = await client.DeleteAsync($"api/Tasks/delete/{userId}/{taskId}");
 
             //Console.WriteLine(response.Content);
             //Console.WriteLine(response.StatusCode);

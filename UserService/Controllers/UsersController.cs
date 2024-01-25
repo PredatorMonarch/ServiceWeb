@@ -139,10 +139,10 @@ namespace UserService.Controllers
             var emailExists = await _context.Users.AnyAsync(e => e.Email == email);
             if (user != null && user.Email == email)
                 return true;
-            if (user != null)
-                return "Username already taken";
             if (emailExists)
                 return "Email already exists";
+            if (user != null)
+                return "Username already taken";
             return false;
         }
     }
