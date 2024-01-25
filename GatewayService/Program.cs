@@ -19,7 +19,7 @@ builder.Services.AddSwaggerGen(option => {
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer 1safsfsdfdfd\"",
+        Description = "JWT Authorization header",
     });
     option.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -42,7 +42,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            options.Authority = "test";
+            options.Authority = "ServiceWebApi";
             options.RequireHttpsMetadata = false;
             options.TokenValidationParameters = new TokenValidationParameters
             {
@@ -50,9 +50,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
                 ValidAudience = "localhost:5000",
-                ValidIssuer = "TodoProject",
+                ValidIssuer = "ServiceWebApi",
                 IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes("YourSecretKeyLongLongLongLongEnough"))
+                    Encoding.UTF8.GetBytes("q.^KtTxmG[<Q%+*\"Lk?;6p{w3DP/B7bWU}M8:Ce$a5S(fV,@H~"))
             };
         });
 var app = builder.Build();

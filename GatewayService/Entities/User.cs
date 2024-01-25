@@ -1,24 +1,29 @@
 ﻿
 namespace GatewayService.Entities
 {
+    public class UserUpdateModel(string username, string email, string pass)
+    {
+        public required string Pass { get; set; } = pass;
+        public required string Username { get; set; } = username;
+        public required string Email { get; set; } = email;
+    }
+    public class UserLoginModel(string login, string pass)
+    {
+        public string Login { get; set; } = login;
+        public string Pass { get; set; } = pass;
+    }
+    
+    public class UserLogin(string login, string pass, bool rememberMe = false)
+    {
+        public required string Login { get; set; } = login;
+        public required string Pass { get; set; } = pass;
+        public required bool RememberMe { get; set; } = rememberMe;
+    }
     public class UserDTO
     {
-        public int Id { get; set; }
-        public string? Name { get; set; }
-        public string? Email { get; set; }
-    }
-
-    public class UserLogin
-    {
-        public required string Name { get; set; }
-        public required string Pass { get; set; }
-    }
-
-    public class UserCreateModel
-    {
-        public required string Password { get; set; }
-        public required string Name { get; set; }
-        public required string Email { get; set; }
+        public string Id { get; set; } 
+        public string Username { get; set; } 
+        public string Email { get; set; }
     }
 
     public class JWTAndUser
