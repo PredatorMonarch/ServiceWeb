@@ -7,7 +7,7 @@ Provide a brief overview of your project here.
 
 ### UserService
 This service is responsible for managing user data. It provides endpoints for creating, updating, retrieving, and deleting users. It also handles user authentication.
-This service uses Argon2d for hashing password and a random salt for added complexity.
+This service uses **Argon2d** for hashing password and a random salt for added complexity.
 The users are stored in a sqlite database file (see image below).
 
 ![image](https://github.com/PredatorMonarch/ServiceWeb/assets/111632331/05423f0a-004b-4923-8a35-f38f05e6a647)
@@ -25,7 +25,7 @@ The token column is unused for now.
 ### TaskService
 This service is responsible for managing tasks. Each user can create a TaskList, a Tasklist is a list of Todos that the user should do.
 It provides endpoints for creating, updating, retrieving, and deleting tasks and individual todos.
-This service uses the Neo4j database hosted remotely at neo4j+s://9055bc95.databases.neo4j.io and connect to it via the Neo4j Driver to handle relations between users, tasks lists, and todos. (see image below)
+This service uses the **Neo4j** database hosted remotely at *neo4j+s://9055bc95.databases.neo4j.io* and connect to it via the **Neo4j Driver** to handle relations between users, tasks lists, and todos. (see image below)
 
 List of users (Limited to 25 in the visualisation) and there relation to task lists: 
 
@@ -56,7 +56,7 @@ The complete view:
 ### GatewayService
 This service acts as a gateway for the other services. It routes incoming requests to the appropriate service and aggregates the responses. 
 It also handles request authentication and authorization via JWT Tokens.
-It also filters the user registration request from invalid usernames and emails.
+It also **filters** the user registration request from invalid usernames and emails.
 
 ####Endpoints
 - `GET /api/Task` : Retrieves all tasks lists
@@ -78,7 +78,7 @@ It also filters the user registration request from invalid usernames and emails.
 ### FrontService
 This service is responsible for the frontend of the application. It is built using a combination of C# and JavaScript, and it interacts with the backend services (UserService, TaskService, GatewayService) to fetch and display data to the user. 
 It also handles user inputs and actions, such as form submissions and button clicks, and sends appropriate requests to the backend services.  
-This service use a user-friendly interface with a Glassmorphic Design.
+This service use a user-friendly interface with a **Glassmorphic Design**.
 See this video for a demo :
 
 <iframe src="https://www.veed.io/embed/7081e1e3-5d2c-4e6d-b98e-5e23d7000011" width="744" height="504" frameborder="0" title="output" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
