@@ -81,10 +81,7 @@ It also handles user inputs and actions, such as form submissions and button cli
 This service use a user-friendly interface with a Glassmorphic Design.
 See this video for a demo :
 
-<video width="320" height="240" controls>
-  <source src="http://predatorcorp.shop/output.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+<iframe src="https://www.veed.io/embed/7081e1e3-5d2c-4e6d-b98e-5e23d7000011" width="744" height="504" frameborder="0" title="output" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
 
 #### Technologies Used
 - C# dotnet 8.0: Used for server-side logic.
