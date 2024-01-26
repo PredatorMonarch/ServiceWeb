@@ -1,7 +1,7 @@
 # Tasky
 
 ## Overview
-Provide a brief overview of your project here.
+This project was built using Rider on Debian 12
 
 ## Microservices
 
