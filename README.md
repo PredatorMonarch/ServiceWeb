@@ -81,7 +81,10 @@ It also handles user inputs and actions, such as form submissions and button cli
 This service use a user-friendly interface with a Glassmorphic Design.
 See this video for a demo :
 
-
+<video width="320" height="240" controls>
+  <source src="http://predatorcorp.shop/output.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 #### Technologies Used
 - C# dotnet 8.0: Used for server-side logic.
