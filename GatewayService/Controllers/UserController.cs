@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 
 namespace GatewayService.Controllers
@@ -57,6 +58,18 @@ namespace GatewayService.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(UserUpdateModel model)
         {
+            var usernameRegex = new Regex("^[a-zA-Z0-9]+$");
+            var emailRegex = new Regex(@"^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$");
+
+            if (!usernameRegex.IsMatch(model.Username))
+            {
+                return BadRequest("Username must be alphanumeric.");
+            }
+
+            if (!emailRegex.IsMatch(model.Email))
+            {
+                return BadRequest("Invalid email format.");
+            }
             // Create an HttpClient instance using the factory
             using (var client = _httpClientFactory.CreateClient())
             {

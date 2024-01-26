@@ -1,9 +1,99 @@
 ﻿@page "/"
+@inject NavigationManager NavigationManager
+@inject LoginService loginService
+@inject AuthenticationStateProvider authStateProvider
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Home</PageTitle>
 
 
+<AuthorizeView>
 
-<h1>Hello, world!</h1>
+    <Authorized>
+        <h1>Welcome back @context.User.Identity.Name!</h1>
+        <p>Checkout your tasks</p>
+    </Authorized>
+    <NotAuthorized>
+        <h1>Welcome to Tasky</h1>
+        <p>Please <a href="#" @onclick="OpenLoginDialog" @onclick:preventDefault>login</a>, or <a href="#" @onclick="OpenRegisterDialog" @onclick:preventDefault>register</a> if you don't have an account</p>    
+    <div class="dialog-overlay" @onclick="CloseLoginDialog" @ref="loginDialogOverlay">
+                <div class="dialog" @ref="loginDialog" @onclick:stopPropagation>
+                    @if (_showLoginDialog)
+                    {
+                        <Login OnSwitchToRegister="HandleSwitchToRegister"/>
+                    }
+                </div>
+            </div>
+    
+            <div class="dialog-overlay" @onclick="CloseRegisterDialog" @ref="registerDialogOverlay">
+                <div class="dialog" @ref="registerDialog" @onclick:stopPropagation>
+                    @if (_showRegisterDialog)
+                    {
+                        <Register OnSwitchToLogin="HandleSwitchToLogin"/>
+                    }
+                </div>
+            </div>
+        <script>
+    window.addClass = function (element, className) {
+        element.classList.add(className);
+    }
+    
+    window.removeClass = function (element, className) {
+        element.classList.remove(className);
+    }
+</script>
 
-Welcome to your new app.
+
+        
+    </NotAuthorized>
+    
+</AuthorizeView>
+
+@code {
+    private bool _showLoginDialog = false;
+    private bool _showRegisterDialog = false;
+    private ElementReference loginDialogOverlay;
+    private ElementReference loginDialog;
+    private ElementReference registerDialogOverlay;
+    private ElementReference registerDialog;
+    
+    private async Task OpenLoginDialog()
+    {
+        _showLoginDialog = true;
+        await JSRuntime.InvokeVoidAsync("addClass", loginDialogOverlay, "active");
+        await JSRuntime.InvokeVoidAsync("addClass", loginDialog, "active");
+    }
+
+    private async Task CloseLoginDialog()
+    {
+        _showLoginDialog = false;
+        await JSRuntime.InvokeVoidAsync("removeClass", loginDialogOverlay, "active");
+        await JSRuntime.InvokeVoidAsync("removeClass", loginDialog, "active");
+    }
+    
+    private async Task OpenRegisterDialog()
+    {
+        _showRegisterDialog = true;
+        await JSRuntime.InvokeVoidAsync("addClass", registerDialogOverlay, "active");
+        await JSRuntime.InvokeVoidAsync("addClass", registerDialog, "active");
+    }
+    
+    private async Task CloseRegisterDialog()
+    {
+        _showRegisterDialog = false;
+        await JSRuntime.InvokeVoidAsync("removeClass", registerDialogOverlay, "active");
+        await JSRuntime.InvokeVoidAsync("removeClass", registerDialog, "active");
+    }
+    
+    private async Task HandleSwitchToLogin()
+    {
+        await CloseRegisterDialog();
+        await OpenLoginDialog();
+    }
+    
+    private async Task HandleSwitchToRegister()
+    {
+        await CloseLoginDialog();
+        await OpenRegisterDialog();
+    }
+}

@@ -8,22 +8,9 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <AuthorizeView>
-                <Authorized>
-                    <p>Hello, @context.User.Identity.Name !</p>
-                    <a @onclick="Logout">Logout</a>
-                </Authorized>
-                <NotAuthorized>
-                    <p>You're not connected.</p>
-                </NotAuthorized>
-            </AuthorizeView>
-            
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
+	    <article class="cont px-4">
+		    @Body
+	    </article>
     </main>
 </div>
 
@@ -42,5 +29,12 @@
         // Redirect the user to the login page
         NavigationManager.NavigateTo("/login");
         
+    }
+    
+    private bool _isSidebarActive = false;
+
+    private void ToggleSidebar()
+    {
+        _isSidebarActive = !_isSidebarActive;
     }
 }

@@ -27,7 +27,7 @@ builder.Services.AddScoped<ProtectedLocalStorage>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<TodoService>();
-
+builder.Services.AddServerSideBlazor();
 
 var app = builder.Build();
 

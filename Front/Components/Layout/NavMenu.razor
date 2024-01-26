@@ -1,40 +1,101 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Front</a>
-    </div>
-</div>
+﻿<div class="top">
+        <div class="logo flex">
+          <ion-icon name="document"></ion-icon>
+          <p class="hide">Tasky</p>
+        </div>
+      </div>
+      <!-- End Top -->
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+      <!-- Menu -->
+      <div class="menu">
+        <AuthorizeView>
+          <NotAuthorized>
+            <NavLink href="/">
+              <div class="menu-item flex">
+                <div class="icon">
+                  <ion-icon name="storefront-outline"></ion-icon>
+                </div>
+            
+                <p class="hide" style="--delay: 300ms">Home</p>
+              </div>
+            </NavLink>
+            <NavLink href="/contact">
+              <div class="menu-item flex">
+                <div class="icon">
+                  <ion-icon name="phone-portrait"></ion-icon>
+                </div>
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
+                <p class="hide" style="--delay: 280ms" >Contact Us</p>
+              </div>
+            </NavLink>
+            <NavLink href="/about">
+            <div class="menu-item flex">
+              <div class="icon">
+                <ion-icon name="information-circle-sharp"></ion-icon>
+              </div>
 
-        <AuthorizeView Roles="User">
-            <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-                    </NavLink>
+              <p class="hide" style="--delay: 280ms" >About</p>
+            </div>
+            </NavLink>
+          </NotAuthorized>
+          <Authorized>
+            <NavLink href="/">
+              <div class="menu-item flex">
+                <div class="icon">
+                  <ion-icon name="storefront-outline"></ion-icon>
                 </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="tasks">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Tasks
-                    </NavLink>
+
+                <p class="hide" style="--delay: 300ms" href="/">Home</p>
+              </div>
+            </NavLink>
+            <NavLink href="/tasks">
+              <div class="menu-item flex">
+                <div class="icon">
+                  <ion-icon name="document-outline"></ion-icon>
                 </div>
-            </Authorized>
-            <NotAuthorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="login" Match="NavLinkMatch.All">
-                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Login
-                    </NavLink>
+
+                <p class="hide" style="--delay: 250ms" href="/tasks">User Tasks</p>
+              </div>
+            </NavLink>
+            <NavLink>
+              <div class="menu-item flex">
+                <div class="icon">
+                  <ion-icon name="barbell"></ion-icon>
                 </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="register" Match="NavLinkMatch.All">
-                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Register
-                    </NavLink>
-                </div>
-            </NotAuthorized>
+
+                <p class="hide" style="--delay: 230ms" href="/progress">Progress (soon)</p>
+              </div>
+            </NavLink>
+             <NavLink href="/security">
+                                    <div class="menu-item flex">
+                                      <div class="icon">
+                                        <ion-icon name="lock-closed"></ion-icon>
+                                      </div>
+                        
+                                      <p class="hide" style="--delay: 230ms" href="/security">Security</p>
+                                    </div>
+                                  </NavLink>
+            <NavLink href="/logout">
+                        <div class="menu-item flex">
+                          <div class="icon">
+                            <ion-icon name="exit"></ion-icon>
+                          </div>
+            
+                          <p class="hide" style="--delay: 230ms" href="/progress">Log out</p>
+                        </div>
+                      </NavLink>
+          </Authorized>
         </AuthorizeView>
-    </nav>
-</div>
-
+      </div>
+      <!-- End Menu -->
+      <!-- Ion Icons Js -->
+      <script
+        type="module"
+        src="https://cdn.jsdelivr.net/npm/@@ionic/core/dist/ionic/ionic.esm.js"
+      ></script>
+      <script
+        nomodule
+        src="https://cdn.jsdelivr.net/npm/@@ionic/core/dist/ionic/ionic.js"
+      ></script>
+      <!-- JS -->
+      <script src="js/script.js"></script>

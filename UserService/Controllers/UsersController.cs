@@ -111,7 +111,7 @@ namespace UserService.Controllers
             var user = await _context.Users.FindAsync(Entities.User.ComputeId(userLogin.Login));
 
             if (user == null)
-                return NotFound();
+                return NotFound("User not found");
 
             if (user.CheckPassword(userLogin.Pass))
                 return Ok(new UserDTO(user));

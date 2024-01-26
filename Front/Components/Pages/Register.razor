@@ -1,53 +1,67 @@
-@page "/register"
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject LoginService loginService
 @inject AuthenticationStateProvider authStateProvider
+@inject IJSRuntime JSRuntime
 
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet"> 
 
-<EditForm Model="@registerModel" OnValidSubmit="HandleLogin">
-    <div class="form-group">
+<div class="wrapper">
+<EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+    <!--
         <label for="username">Username</label>
-        <InputText id="username" class="form-control" @bind-Value="registerModel.Username" />
+        <InputText id="username" class="form-control" @bind-Value="loginModel.Username" />-->
+    <h2>Sign-up</h2>
+    <div class="input-field">
+        <input type="text" required @bind="registerModel.Username">
+        <label>Enter your username</label>
     </div>
-
-    <div class="form-group">
-        <label for="password">Password</label>
-        <InputText id="password" class="form-control" @bind-Value="registerModel.Password" type="password" />
-    </div>
-
-    <div class="form-group">
-        <label for="email">Email</label>
-        <InputText id="email" class="form-control" @bind-Value="registerModel.Email" type="email" />
-    </div>
-
-    <button class="btn btn-primary" type="submit">Login</button>
+    <div class="input-field">
+                <input type="text" required @bind="registerModel.Email">
+                <label>Enter your email</label>
+              </div>
+          <div class="input-field">
+            <input type="password" required @bind="registerModel.Pass">
+            <label>Enter your password</label>
+          </div>
+          <button type="submit">Register</button>
+          <div class="register">
+            <p>Already have an account? <a href="#" @onclick="SwitchToLogin" @onclick:preventDefault>Login</a></p>
+          </div>
+    
+    
 </EditForm>
+</div>
 
 <span style="color: red">@error</span>
 
 @code {
-    private RegisterModel registerModel = new RegisterModel();
+    [Parameter]
+    public EventCallback OnSwitchToLogin { get; set; }
+    private UserUpdateModel registerModel = new UserUpdateModel("", "", "");
     private string error = "";
+    private ElementReference loginDialogOverlay;
+    private ElementReference loginDialog;
+    private ElementReference registerDialogOverlay;
+    private ElementReference registerDialog;
 
-    private async void HandleLogin()
+    private async void HandleRegister()
     {
-        var user = await loginService.RegisterUser(registerModel.Username, registerModel.Password, registerModel.Email);
-        if (user != null)
+        var user = await loginService.RegisterUser(registerModel.Username, registerModel.Pass, registerModel.Email);
+        if (user is UserDTO)
         {
             error = "";
-            NavigationManager.NavigateTo("/login");
+            SwitchToLogin();
         }
         else
         {
-            error = "Login or password or email invalid !";
+            error = user;
         }
+        StateHasChanged();
     }
-
-    private class RegisterModel
+    private async Task SwitchToLogin()
     {
-        public string Username { get; set; } = "";
-        public string Password { get; set; } = "";
-        public string Email { get; set; } = "";
+        OnSwitchToLogin.InvokeAsync();
     }
 }

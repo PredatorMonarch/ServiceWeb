@@ -21,8 +21,9 @@ namespace Front.Services
         {
             await _sessionStorage.SetAsync("User", user);
             var claims = new[] {
-                new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Role, "User")
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.Username)
             };
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             _currentUser = new ClaimsPrincipal(identity);
@@ -47,8 +48,9 @@ namespace Front.Services
             {
                 var user = userSession.Value;
                 var claims = new[] {
-                    new Claim(ClaimTypes.Name, user.Name),
-                    new Claim(ClaimTypes.Role, "User")
+                    new Claim(ClaimTypes.Name, user.Username),
+                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id)
                 };
                 var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 _currentUser = new ClaimsPrincipal(identity);

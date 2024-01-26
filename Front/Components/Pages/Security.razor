@@ -1,0 +1,64 @@
+
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject LoginService loginService
+@inject AuthenticationStateProvider authStateProvider
+@inject IJSRuntime JSRuntime
+
+@page "/security"
+@using System.Reflection.Metadata
+
+<PageTitle>Security</PageTitle>
+<AuthorizeView>
+    <NotAuthorized>
+        @{ NavigationManager.NavigateTo("/"); }
+        
+        </NotAuthorized>
+    <Authorized>
+        <h1>Security settings</h1>
+        <p>Click <a href="#" @onclick="OpenDialog" @onclick:preventDefault>here</a> to change you password</p>
+    
+<div class="dialog-overlay" @onclick="CloseDialog" @ref="dialogOverlay">
+    <div class="dialog" @ref="passDialog" @onclick:stopPropagation>
+        @if (_showPassDialog)
+        {
+            <Password OnClose="CloseDialog"/>
+        }
+    </div>
+</div>
+        <script>
+            window.addClass = function (element, className) {
+                element.classList.add(className);
+            }
+            
+            window.removeClass = function (element, className) {
+                element.classList.remove(className);
+            }
+        </script>
+       
+
+
+
+@code {
+    private bool _showPassDialog = false;
+    private ElementReference dialogOverlay;
+    private ElementReference passDialog;
+    
+    private async Task OpenDialog(MouseEventArgs e)
+    {
+        _showPassDialog = true;
+        await JSRuntime.InvokeVoidAsync("addClass", dialogOverlay, "active");
+        await JSRuntime.InvokeVoidAsync("addClass", passDialog, "active");
+    }
+
+    private async Task CloseDialog()
+    {
+        _showPassDialog = false;
+        await JSRuntime.InvokeVoidAsync("removeClass", dialogOverlay, "active");
+        await JSRuntime.InvokeVoidAsync("removeClass", passDialog, "active");
+    }
+    
+}
+    </Authorized>
+
+</AuthorizeView>

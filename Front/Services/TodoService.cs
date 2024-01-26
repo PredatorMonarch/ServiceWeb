@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Mime;
 using System.Reflection;
 using System.Security.Claims;
 
@@ -22,15 +23,15 @@ namespace Front.Services
             _sessionStorage = sessionStorage;
         }
 
-        public async Task<Todo[]> GetAllTasks()
+        public async Task<List<TaskList>> GetAllTasks()
         {
             var jwt = await _sessionStorage.GetAsync<string>("jwt");
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt.Value);
-            HttpResponseMessage response = await _httpClient.GetAsync("http://localhost:5000/api/Todo");
+            HttpResponseMessage response = await _httpClient.GetAsync("http://localhost:5000/api/Task");
 
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<Todo[]>();
+                var result = await response.Content.ReadFromJsonAsync<List<TaskList>>();
 
                 return result;
             }
@@ -40,19 +41,17 @@ namespace Front.Services
             }
         }
 
-        public async Task<Todo> CreateNewTask()
+        public async Task<TaskList> CreateNewTaskList(string name)
         {
-            var task = new TodoCreate() { IsDone = false, Text = "Empty" };
+            var task = new TaskListCreate() { Name = name };
 
             var jwt = await _sessionStorage.GetAsync<string>("jwt");
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt.Value);
-            HttpResponseMessage response = await _httpClient.PostAsJsonAsync("http://localhost:5000/api/Todo/create", task);
-
-            Console.WriteLine(response.Content.ToString());
-            Console.WriteLine(response.StatusCode);
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync("http://localhost:5000/api/Task/create", task);
+            
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<Todo>();
+                var result = await response.Content.ReadFromJsonAsync<TaskList>();
 
                 return result;
             }
@@ -61,17 +60,66 @@ namespace Front.Services
                 return null;
             }
         }
-        public async Task<Todo> UpdateTodo(Todo todo)
+        public async Task<TaskList> UpdateTaskList(TaskList taskList)
         {
-            var task = new TodoCreate() { IsDone = todo.IsDone, Text = todo.Text };
+            var task = new TaskListUpdate() { Name = taskList.Name, Progress = taskList.Progress, Size = taskList.Size };
 
-            Console.WriteLine($"update todo {todo.Id} {todo.IsDone} {todo.Text}");
+            var jwt = await _sessionStorage.GetAsync<string>("jwt");
+            var id = taskList.Id;
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt.Value);
+            HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"http://localhost:5000/api/Task/update/{id}", task);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<TaskList>();
+
+                return result;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        
+        public async Task<bool> DeleteTaskList(string id)
+        {
             var jwt = await _sessionStorage.GetAsync<string>("jwt");
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt.Value);
-            HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"http://localhost:5000/api/Todo/update/{todo.Id}", task);
+            HttpResponseMessage response = await _httpClient.DeleteAsync($"http://localhost:5000/api/Task/delete/{id}");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<bool>();
+            }
+            
+            return false;
+        }
+        
+        
+        public async Task<List<Todo>> GetAllTodos(string id)
+        {
+            var jwt = await _sessionStorage.GetAsync<string>("jwt");
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt.Value);
+            HttpResponseMessage response = await _httpClient.GetAsync($"http://localhost:5000/api/Task/list/{id}");
 
-            Console.WriteLine(response.Content.ToString());
-            Console.WriteLine(response.StatusCode);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<Todo>>();
+
+                return result;
+            }
+            else
+            {
+                return [];
+            }
+        }
+        
+        public async Task<Todo> CreateNewTodoItem(string id, TodoCreate todo)
+        {
+            var jwt = await _sessionStorage.GetAsync<string>("jwt");
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt.Value);
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync($"http://localhost:5000/api/Task/create/{id}", todo);
+            
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<Todo>();
@@ -84,20 +132,39 @@ namespace Front.Services
             }
         }
         
-        public async Task Delete(int id)
+        public async Task<Todo> UpdateTodoItem(string id, Todo todo)
         {
+            var _todo = new TodoCreate() { Text = todo.Text, IsDone = todo.IsDone };
             var jwt = await _sessionStorage.GetAsync<string>("jwt");
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt.Value);
-            HttpResponseMessage response = await _httpClient.DeleteAsync($"http://localhost:5000/api/Todo/delete/{id}");
+            HttpResponseMessage response = await _httpClient.PutAsJsonAsync($"http://localhost:5000/api/Task/update/{id}/{todo.Id}", _todo);
 
-            Console.WriteLine(response.Content.ToString());
-            Console.WriteLine(response.StatusCode);
-            if (!response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
-                throw new Exception("Error deleting");
+                var result = await response.Content.ReadFromJsonAsync<Todo>();
+
+                return result;
+            }
+            else
+            {
+                return null;
             }
         }
 
+        public async Task<bool> DeleteTodoItem(string id, Todo todo)
+        {
+            var jwt = await _sessionStorage.GetAsync<string>("jwt");
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt.Value);
+            HttpResponseMessage response =
+                await _httpClient.DeleteAsync($"http://localhost:5000/api/Task/delete/{id}/{todo.Id}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<bool>();
+            }
+
+            return false;
+        }
     }
 }
 

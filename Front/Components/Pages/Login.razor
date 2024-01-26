@@ -1,32 +1,53 @@
-@page "/login"
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject LoginService loginService
 @inject AuthenticationStateProvider authStateProvider
+@inject IJSRuntime JSRuntime
 
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet"> 
 
+<div class="wrapper">
 <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
-    <div class="form-group">
+    <!--
         <label for="username">Username</label>
-        <InputText id="username" class="form-control" @bind-Value="loginModel.Username" />
-    </div>
-
-    <div class="form-group">
-        <label for="password">Password</label>
-        <InputText id="password" class="form-control" @bind-Value="loginModel.Password" type="password" />
-    </div>
-    <button type="submit">Login</button>
+        <InputText id="username" class="form-control" @bind-Value="loginModel.Username" />-->
+    <h2>Login</h2>
+            <div class="input-field">
+            <input type="text" required @bind="loginModel.Login">
+            <label>Enter your username</label>
+          </div>
+          <div class="input-field">
+            <input type="password" required @bind="loginModel.Pass">
+            <label>Enter your password</label>
+          </div>
+          <div class="forget">
+            <label for="remember">
+              <input type="checkbox" id="remember" @bind="loginModel.RememberMe">
+              <p>Remember me</p>
+            </label>
+            <a href="#">Forgot password?</a>
+          </div>
+          <button type="submit">Log In</button>
+          <div class="register">
+            <p>Don't have an account? <a href="#" @onclick="SwitchToRegister" @onclick:preventDefault>Register</a></p>
+          </div>
+    
+    
 </EditForm>
+</div>
 <span style="color: red">@error</span>
 
 @code {
-    private LoginModel loginModel = new LoginModel();
+    [Parameter]
+    public EventCallback OnSwitchToRegister { get; set; }
+    private UserLogin loginModel = new UserLogin("","");
     private string error = "";
 
     private async void HandleLogin()
     {
-        var user = await loginService.AuthenticateUser(loginModel.Username, loginModel.Password);
-        if (user != null)
+        var user = await loginService.AuthenticateUser(loginModel.Login, loginModel.Pass, loginModel.RememberMe);
+        if (user is UserDTO)
         {
             var userClaim = await ((CustomAuthenticationStateProvider)authStateProvider).MarkUserAsAuthenticated(user);
             error = "";
@@ -34,13 +55,14 @@
         }
         else
         {
-            error = "Login/Password invalid !";
+            error = user;
         }
+        StateHasChanged();
     }
-
-    private class LoginModel
+    
+    private async Task SwitchToRegister()
     {
-        public string Username { get; set; } = "";
-        public string Password { get; set; } = "";
+        OnSwitchToRegister.InvokeAsync();
     }
+    
 }

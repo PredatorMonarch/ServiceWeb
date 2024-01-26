@@ -1,72 +1,271 @@
 ﻿@page "/tasks"
 @inject TodoService todoService
+@inject NavigationManager NavigationManager
 
 <PageTitle>Task list</PageTitle>
+<AuthorizeView>
+    <Authorized>
+        <h1>Task list</h1>
 
-<h1>Task list</h1>
+        <p>What should I do before tommorow</p>
 
-<p>What should I do before tommorow</p>
-
-@if (todos == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <button class="btn btn-primary" @onclick="addTodo">Add a new todo</button>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Status</th>
-                <th>Text</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var todo in todos)
+        @if (_taskLists == null)
+        {
+            <p><em>Loading...</em></p>
+        }
+        else
+        {
+            @if (isAddingTask)
             {
-                <tr>
-                    <td>@todo.Id</td>
-                    <td><InputCheckbox @bind-Value="@todo.IsDone" /></td>
-                    <td>
-                        <InputText @bind-Value="todo.Text" />
-                        <button class="btn btn-danger" @onclick="() => UpdateTodo(todo)">Save</button>
-                        <button class="btn btn-danger" @onclick="() => DeleteTodo(todo.Id)">X</button>
-                    </td>
-                </tr>
+                <input class="task-input" type="text" @bind="newTaskName" placeholder="Enter task name" maxlength="7"/>
+                <button class="confirm-task" @onclick="addTaskList">Confirm</button>
+                <button class="cancel-task" @onclick="CancelAddTask">Cancel</button>
             }
-        </tbody>
-    </table>
-}
+            else
+            {
+                <button class="add-task" @onclick="StartAddTask">+</button>
+            }
+            /*<button class="btn btn-primary" @onclick="addTaskList">Add a new list</button>*/
+            <div class="container">
 
+                @foreach (var task in _taskLists)
+                {
+                    var gradientColor = GetGradientColor();
+                    <div class="box" style="--gradient-start: @gradientColor.Start; --gradient-end: @gradientColor.End;">                        
+                        <span></span>
+                        <div class="content">
+                            <h2>@task.Name</h2>
+                            <p>Click here to expand</p>
+                            <a @onclick="() => expand(task)">Expand</a>
+                        </div>
+                    </div>
+                }
+                @if (currentTask != null)
+                    {
+                        <div class="modal" @onclick="CloseModal">
+                                <div class="modal-content" @onclick:stopPropagation="true">
+                                    <div class="task-header">
+                                        <div class="task-text-container">
+                                        @if (updatingTask == currentTask)
+                                        {
+                                            <input class="task-input" maxlength="7" type="text" @bind="currentTask.Name" @onfocusout="() => FinishUpdateTask(currentTask)"/>
+                                        }
+                                        else
+                                        {
+                                            <h2>@currentTask.Name</h2>
+                                        }
+                                        </div>
+                                        <button class="update-task" @onclick="() => UpdateTask(currentTask)">✏️</button>
+                                        <button class="add-todo" @onclick="addTodo">+</button>
+                                        <button class="del-todo" @onclick="() => DeleteTask(currentTask)">🗑️</button>
+                                    </div>
+                                    @foreach (var todo in _todos)
+                                    {
+                                        <div class="todo-item">
+                                            <div class="todo-text-container">
+                                                @if (updatingTodo == todo)
+                                                {
+                                                    <input class="text" maxlength="30" type="text" @bind="todo.Text" @onfocusout="() => FinishUpdateTodo(todo)"/>
+                                                }
+                                                else
+                                                {
+                                                    <p class="@(todo.IsDone ? "checked" : "")">@todo.Text</p>
+                                                }
+                                            </div>
+                                            <input class="check-box" type="checkbox" @bind="todo.IsDone" @onclick="() => Checkbox(todo)"/>
+                                            <button class="update-todo" @onclick="() => UpdateTodo(todo)">✏️</button>
+                                            <button class="delete-todo" @onclick="() => DeleteTodo(todo)">🗑</button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                    }
+
+            </div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        @{ NavigationManager.NavigateTo("/"); }
+    </NotAuthorized>
+</AuthorizeView>
 @code {
-    private Todo[]? todos;
-
+    private List<TaskList>? _taskLists;
+    private List<Todo>? _todos;
+    private bool isAddingTask = false;
+    private string newTaskName = "";
+    private int colorIndex = 0;
+    private TaskList? currentTask;
+    private Todo? updatingTodo = null;
+    private TaskList? updatingTask = null;
+    
     protected override async Task OnInitializedAsync()
     {
-        todos = await todoService.GetAllTasks();
+        _taskLists = await todoService.GetAllTasks();
+        if (currentTask != null) 
+        {
+            _todos = await todoService.GetAllTodos(currentTask.Id);
+        }
+        colorIndex = 0;
+    }
+    
+    private void StartAddTask()
+    {
+        isAddingTask = true;
     }
 
+    
+    private async Task addTaskList()
+    {
+        if (_taskLists == null)
+        {
+            CancelAddTask();
+            return;
+        }
+
+        var newTaskList = await todoService.CreateNewTaskList(newTaskName);
+        if (newTaskList == null)
+        {
+            CancelAddTask();
+            return;
+        }
+
+        _taskLists = new List<TaskList>(_taskLists) {newTaskList};
+        CancelAddTask();
+    }
+
+    private async void DeleteTask(TaskList task)
+    {
+        var response = await todoService.DeleteTaskList(task.Id);
+        if (response)
+        {
+            _taskLists.Remove(task);
+            _taskLists = new List<TaskList>(_taskLists);
+            CloseModal();
+            StateHasChanged();
+        }
+        StateHasChanged();
+    }
+    
+    private async Task UpdateTask(TaskList task)
+    {
+        updatingTask = task;
+    }
+
+    private async Task FinishUpdateTask(TaskList task)
+    {
+        if (updatingTask != null)
+        {
+            var response = await todoService.UpdateTaskList(task);
+            if (response == null)
+            {
+                _taskLists = await todoService.GetAllTasks();
+            }
+
+            int index = _taskLists.FindIndex(t => t.Id == task.Id);
+            if (index != -1)
+            {
+                _taskLists[index] = response;
+            }
+            updatingTask = null;
+        }
+    }
+    
+    private void CancelAddTask()
+    {
+        isAddingTask = false;
+        newTaskName = "";
+    }
+    
+    private async Task expand(TaskList task)
+    {
+        _todos = await todoService.GetAllTodos(task.Id);
+        currentTask = task;
+    }
+    
+    private (string Start, string End)[] gradientColors = new[]
+    {
+        ("#ffbc00", "#ff0058"), // yellow-orange
+        ("#03a9f4", "#ff0058"), // purple-blue
+        ("#4dff03", "#00d0ff"), // cyan-green
+        ("#4dff03", "#ffff00"),
+        ("#000000", "#ffffff")
+        // Add more colors as needed
+    };
+    
+    public (string Start, string End) GetGradientColor()
+    {
+        var color = gradientColors[colorIndex % gradientColors.Length];
+        colorIndex++; // Increment the color index
+        return color;
+    }
+    
+    private void CloseModal()
+    {
+        currentTask = null;
+    }
+    
     private async Task addTodo()
     {
-        if (todos == null) return;
-        var newTodo = await todoService.CreateNewTask();
-        Console.WriteLine(newTodo.Id);
-        var todosList = todos.ToList();
-        todosList.Add(newTodo);
-        todos = todosList.ToArray();
+        if (currentTask == null) return;
+        var todocreate = new TodoCreate {Text = "Untitled", IsDone = false};
+        var newTodo = await todoService.CreateNewTodoItem(currentTask.Id, todocreate);
+        if (newTodo == null) return;
+        _todos = new List<Todo>(_todos) { newTodo };
+        StateHasChanged();
     }
-
-    private async Task DeleteTodo(int id)
+    
+    private async Task DeleteTodo(Todo todo)
     {
-        if (todos == null) return;
-        await todoService.Delete(id);
-        todos = todos.Where(t => t.Id != id).ToArray();
+        if (currentTask == null) return;
+        var response = await todoService.DeleteTodoItem(currentTask.Id, todo);
+        if (response)
+        {
+            _todos.Remove(todo);
+        }
     }
 
     private async Task UpdateTodo(Todo todo)
     {
-        await todoService.UpdateTodo(todo);
+        updatingTodo = todo;
+    }
+    
+    private async Task FinishUpdateTodo(Todo todo)
+    {
+        if (updatingTodo != null)
+        {
+            if (currentTask == null) return;
+            var response = await todoService.UpdateTodoItem(currentTask.Id, todo);
+            if (response == null)
+            {
+                _todos = await todoService.GetAllTodos(currentTask.Id);
+            }
+
+            int index = _todos.FindIndex(t => t.Id == todo.Id);
+            if (index != -1)
+            {
+                _todos[index] = response;
+            }
+            updatingTodo = null;
+        }
+    }
+    
+    private async Task Checkbox(Todo todo)
+    {
+        if (currentTask == null) return;
+        todo.IsDone = !todo.IsDone;
+        var response = await todoService.UpdateTodoItem(currentTask.Id, todo);
+        if (response == null)
+        {
+            _todos = await todoService.GetAllTodos(currentTask.Id);
+            Console.WriteLine("Error");
+            return;
+        }
+
+        int index = _todos.FindIndex(t => t.Id == todo.Id);
+        if (index != -1)
+        {
+            _todos[index] = response;
+        }
     }
 
 }

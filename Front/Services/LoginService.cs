@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace Front.Services
 {
@@ -21,9 +23,9 @@ namespace Front.Services
             _sessionStorage = sessionStorage;
         }
 
-        public async Task<UserDTO> AuthenticateUser(string username, string password)
+        public async Task<dynamic> AuthenticateUser(string username, string password, bool rememberMe = false)
         {
-            var login = new UserLogin() { Name = username, Pass = password };
+            var login = new UserLogin(username, password, rememberMe);
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("http://localhost:5000/api/User/login", login);
 
@@ -36,13 +38,14 @@ namespace Front.Services
             }
             else
             {
-                return null;
+                var result = await response.Content.ReadAsStringAsync();
+                return result;
             }
         }
 
-        public async Task<UserDTO> RegisterUser(string username, string password,string email)
+        public async Task<dynamic> RegisterUser(string username, string password,string email)
         {
-            var registerInfo = new UserCreateModel() { Name = username, Password = password, Email = email };
+            var registerInfo = new UserUpdateModel(username, email, password);
 
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync("http://localhost:5000/api/User/register", registerInfo);
 
@@ -53,8 +56,36 @@ namespace Front.Services
             }
             else
             {
+                var result = await response.Content.ReadAsStringAsync();
+                return result;
+            }
+        }
+        
+        public async Task<UserDTO> UpdateUser(string username, string password,string email)
+        {
+            var registerInfo = new UserUpdateModel(username, email, password);
+            var jwt = await _sessionStorage.GetAsync<string>("jwt");
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt.Value);
+            HttpResponseMessage response = await _httpClient.PutAsJsonAsync("http://localhost:5000/api/User/update", registerInfo);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<UserDTO>();
+                return result;
+            }
+            else
+            {
                 return null;
             }
+        }
+        
+        public async Task<string> DeleteUser()
+        {
+            var jwt = await _sessionStorage.GetAsync<string>("jwt");
+            HttpResponseMessage response = await _httpClient.DeleteAsync("http://localhost:5000/api/User/delete");
+            var result = await response.Content.ReadAsStringAsync();
+
+            return result;
         }
     }
 }

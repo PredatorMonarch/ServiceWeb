@@ -1,0 +1,15 @@
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject LoginService loginService
+@inject AuthenticationStateProvider authStateProvider
+@inject IJSRuntime JSRuntime
+
+@page "/logout"
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var userClaim = await ((CustomAuthenticationStateProvider)authStateProvider).Logout();
+        NavigationManager.NavigateTo("/");
+    }
+}
