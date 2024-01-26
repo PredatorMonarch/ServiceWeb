@@ -83,6 +83,8 @@ See this video for a demo :
 
 <iframe src="https://www.veed.io/embed/7081e1e3-5d2c-4e6d-b98e-5e23d7000011" width="744" height="504" frameborder="0" title="output" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
 
+or at : "http://predatorcorp.shop/output.mp4" 
+
 #### Technologies Used
 - C# dotnet 8.0: Used for server-side logic.
 - JavaScript: Used for client-side scripting.
